@@ -1,40 +1,105 @@
 import React, { useState, useEffect } from 'react';
 import { DropboxService } from './services/dropboxService';
+import { AuthService } from './services/authService';
 import { ConnectDropbox } from './components/ConnectDropbox';
 import { AppLogin } from './components/AppLogin';
 import { Dashboard } from './components/Dashboard';
 import { User, AuthState, Role } from './types';
 import { hashPassword } from './utils/crypto';
-import { DROPBOX_ACCESS_TOKEN } from './config';
+import { DROPBOX_ACCESS_TOKEN, DROPBOX_APP_KEY } from './config';
 
 // Constants
-const DROPBOX_TOKEN_KEY = 'dropbase_dbx_token';
+const REFRESH_TOKEN_KEY = 'dropbase_refresh_token';
 
 function App() {
   const [dropboxService, setDropboxService] = useState<DropboxService | null>(null);
   const [authState, setAuthState] = useState<AuthState>({
     dropboxToken: null,
+    refreshToken: null,
+    tokenExpiresAt: null,
     isAuthenticated: false,
     currentUser: null,
     status: 'idle'
   });
   const [error, setError] = useState<string>('');
 
-  // 1. Initial Load: Check for Dropbox Token (Config or LocalStorage)
+  // 1. Initial Load: Check for URL Code (Callback) or Refresh Token (Auto-login)
   useEffect(() => {
-    // Prefer the hardcoded token if available, otherwise check localStorage
-    const token = DROPBOX_ACCESS_TOKEN || localStorage.getItem(DROPBOX_TOKEN_KEY);
-    if (token) {
-      initializeDropbox(token);
-    } else {
-      setAuthState(prev => ({ ...prev, status: 'login_required' }));
-    }
+    const handleAuthFlow = async () => {
+        // A. Check for OAuth Callback Code
+        const urlParams = new URLSearchParams(window.location.search);
+        const authCode = urlParams.get('code');
+
+        if (authCode) {
+            setAuthState(prev => ({ ...prev, status: 'checking_dropbox' }));
+            try {
+                // Exchange code for tokens
+                const response = await AuthService.exchangeCodeForToken(authCode);
+                
+                // Clean URL
+                window.history.replaceState({}, document.title, window.location.pathname);
+
+                await handleTokenSuccess(response.access_token, response.refresh_token, response.expires_in);
+                return;
+            } catch (e: any) {
+                console.error("Auth Error", e);
+                setError(e.message || "Failed to authenticate with Dropbox");
+                setAuthState(prev => ({ ...prev, status: 'login_required' }));
+                return;
+            }
+        }
+
+        // B. Check for Existing Refresh Token
+        const storedRefreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
+        if (storedRefreshToken) {
+             setAuthState(prev => ({ ...prev, status: 'checking_dropbox' }));
+             try {
+                 const response = await AuthService.refreshAccessToken(storedRefreshToken);
+                 await handleTokenSuccess(response.access_token, storedRefreshToken, response.expires_in);
+             } catch (e) {
+                 console.error("Auto-login failed", e);
+                 // If refresh fails, user must log in again
+                 localStorage.removeItem(REFRESH_TOKEN_KEY);
+                 setAuthState(prev => ({ ...prev, status: 'login_required' }));
+             }
+             return;
+        }
+
+        // C. Legacy Hardcoded Token (Fallback)
+        if (DROPBOX_ACCESS_TOKEN) {
+            await initializeDropbox(DROPBOX_ACCESS_TOKEN);
+            return;
+        }
+
+        // D. No auth found
+        setAuthState(prev => ({ ...prev, status: 'login_required' }));
+    };
+
+    handleAuthFlow();
   }, []);
+
+  const handleTokenSuccess = async (accessToken: string, refreshToken: string | undefined, expiresIn: number) => {
+      // Store refresh token persistently
+      if (refreshToken) {
+          localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+      }
+      
+      // Calculate expiry time (subtract 1 minute for safety buffer)
+      const expiresAt = Date.now() + (expiresIn * 1000) - 60000;
+
+      setAuthState(prev => ({ 
+          ...prev, 
+          dropboxToken: accessToken,
+          refreshToken: refreshToken || prev.refreshToken,
+          tokenExpiresAt: expiresAt
+      }));
+
+      await initializeDropbox(accessToken);
+  };
 
   // 2. Initialize Dropbox Service & Check for User DB
   const initializeDropbox = async (token: string) => {
     const service = new DropboxService(token);
-    setAuthState(prev => ({ ...prev, status: 'checking_dropbox' }));
     
     try {
         // Verify token by listing files
@@ -42,28 +107,20 @@ function App() {
         
         // Setup Service
         setDropboxService(service);
-        setAuthState(prev => ({ ...prev, dropboxToken: token }));
         
-        // Only store in local storage if it's not the config token
-        localStorage.setItem(DROPBOX_TOKEN_KEY, token);
-
-        // Check for roles.json
+        // Check for core database files
         const rolesDbExists = await service.fileExists('/roles.json');
         if (!rolesDbExists) {
             const defaultRoles: Role[] = [
-                { id: 'group_admin', name: 'Group Admin', description: 'Full system access, manages associations and users.' },
-                { id: 'admin', name: 'Admin', description: 'Manages users within their associations.' },
-                { id: 'user', name: 'User', description: 'Can access files.' }
+                { id: 'group_admin', name: 'Group Admin', description: 'Full system access.' },
+                { id: 'admin', name: 'Admin', description: 'Local user management.' },
+                { id: 'user', name: 'User', description: 'Basic access.' }
             ];
             await service.uploadJson('/roles.json', { roles: defaultRoles });
-            console.log("Created roles.json");
         }
 
-        // Check for users.json
         const userDbExists = await service.fileExists('/users.json');
-        
         if (!userDbExists) {
-            // Create default admin with group_admin role
             const defaultPass = 'admin123';
             const hashed = await hashPassword(defaultPass);
             const adminUser: User = {
@@ -73,51 +130,17 @@ function App() {
                 createdAt: new Date().toISOString(),
                 associationIds: []
             };
-            
             await service.uploadJson('/users.json', { users: [adminUser] });
-            console.log("Created users.json with default admin/admin123 (Group Admin)");
-        } else {
-            // MIGRATION / RECOVERY: 
-            // 1. Upgrade 'admin' to 'group_admin' if needed.
-            // 2. Restore 'admin' password to 'admin123' (per user request).
-            try {
-                const userData = await service.downloadJson('/users.json');
-                if (userData && Array.isArray(userData.users)) {
-                    let changed = false;
-                    const defaultAdminHash = await hashPassword('admin123');
-
-                    const updatedUsers = userData.users.map((u: User) => {
-                        // Target the default 'admin' user
-                        if (u.username === 'admin') {
-                            // Check if role needs upgrade OR password needs restoration
-                            if (u.role !== 'group_admin' || u.passwordHash !== defaultAdminHash) {
-                                changed = true;
-                                return { 
-                                    ...u, 
-                                    role: 'group_admin', 
-                                    passwordHash: defaultAdminHash 
-                                };
-                            }
-                        }
-                        return u;
-                    });
-
-                    if (changed) {
-                        await service.uploadJson('/users.json', { users: updatedUsers });
-                        console.log("Restored 'admin' user: Role set to 'group_admin', Password reset to 'admin123'");
-                    }
-                }
-            } catch (err) {
-                console.warn("User migration check failed", err);
-            }
         }
 
-        // Check for associations.json
         const assocDbExists = await service.fileExists('/associations.json');
-        
         if (!assocDbExists) {
              await service.uploadJson('/associations.json', { associations: [] });
-             console.log("Created associations.json");
+        }
+
+        const dbRegistryExists = await service.fileExists('/databases.json');
+        if (!dbRegistryExists) {
+             await service.uploadJson('/databases.json', { databases: [] });
         }
 
         setAuthState(prev => ({ ...prev, status: 'app_login' }));
@@ -125,14 +148,32 @@ function App() {
 
     } catch (e: any) {
         console.error("Init failed", e);
-        setError('Connection failed. If the configured token is invalid, please enter a new one.');
+        setError('Connection failed. Please check your token or reconnect.');
         setAuthState(prev => ({ ...prev, status: 'login_required' }));
-        localStorage.removeItem(DROPBOX_TOKEN_KEY);
     }
+  };
+
+  const handleManualTokenLogin = async (token: string) => {
+    setAuthState(prev => ({ ...prev, status: 'checking_dropbox' }));
+    await initializeDropbox(token);
   };
 
   // 3. Handle App Login
   const handleAppLogin = async (username: string, pass: string) => {
+      // Check if Dropbox token is expired before proceeding (only for OAuth tokens)
+      if (authState.tokenExpiresAt && Date.now() > authState.tokenExpiresAt) {
+           if (authState.refreshToken) {
+               try {
+                   const response = await AuthService.refreshAccessToken(authState.refreshToken);
+                   await handleTokenSuccess(response.access_token, authState.refreshToken, response.expires_in);
+               } catch (e) {
+                   setError("Session expired. Please reconnect Dropbox.");
+                   setAuthState(prev => ({ ...prev, status: 'login_required' }));
+                   return;
+               }
+           }
+      }
+
       if (!dropboxService) throw new Error("Service not ready");
 
       const userData = await dropboxService.downloadJson('/users.json');
@@ -157,15 +198,13 @@ function App() {
       }));
   };
 
-  const handleDropboxConnect = (token: string) => {
-      initializeDropbox(token);
-  };
-
   const handleResetDropbox = () => {
-      localStorage.removeItem(DROPBOX_TOKEN_KEY);
+      localStorage.removeItem(REFRESH_TOKEN_KEY);
       setDropboxService(null);
       setAuthState({
           dropboxToken: null,
+          refreshToken: null,
+          tokenExpiresAt: null,
           isAuthenticated: false,
           currentUser: null,
           status: 'login_required'
@@ -197,7 +236,7 @@ function App() {
   }
 
   if (authState.status === 'login_required') {
-      return <ConnectDropbox onConnect={handleDropboxConnect} error={error} />;
+      return <ConnectDropbox error={error} onManualToken={handleManualTokenLogin} />;
   }
 
   if (authState.status === 'app_login') {

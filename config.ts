@@ -1,2 +1,37 @@
-// This token is used to authenticate with Dropbox automatically
-export const DROPBOX_ACCESS_TOKEN = 'sl.u.AGMvgE1skMLfdQdnBMOmB2SGFbpP3QU3WqvHv7B7iHuBJflpaoqB14ZElCdKOS2znuxHZ3sj79MnLPtqkl9raqnd_i_jIdewVxgnN-ilEWdp_XyHDRrw1EncCqj49QaD9qmnGp1tvwJVwApKvjkuRH0YCUPytcqD0xH3mJn8EQ6s1vTdiHmJ1azgxnfPN6j2eGs7HZOOwA6bcRGzjzItLvoCNpUtDaBrj136dkGw_EhJdIoSs5UABfYoUuNJGI7QxrgtmSBdkz24S-_1RQWFE8hot8L9qXkLHgLz_LIPtmbgdWjIk4yK449e8W7mCYBHXdPlme4wL5SwnjnhXr7GO-7ltoZDHICdudSP4rUde5UVWjE7cYd69CsBbXTjX6gm0bBi3lJ-E3t48DNgbjx6MJCqJpYwyF60Hz3reJKZxaOkzMu3_jQF5hK7ScgOpUsvjyDaklBLNxGDyqFK-uT-psAXdTgUYjgWCkcriJ6lUj0GwUtRAbY4wdVK1ZUM0AweA9t-hbxl_G2XhGlKcgMLMdH47M2g991SU5M2ETysSN6zLDa2ab60ogTfegjtQ8dfKIWBQi1fJjcDsfhfwbOfvSlPzdySJZYQsY80mybgnFDcCOOIABxBsXmAu_ZYNBIcECA1gWWOQfxIWiDjIA0r_5wgEHR0lCoQYTvZ6tQmjGKhi7xj1i356bLfQT1jVZr1wIR519t2mlKjxkOxCZs0KIo8LHRCvH_DiJZBXnakGx3hZPmPmdfSjws666e2JfHli1L0b7CUiAgTKyryLQoetw0YtGYN5PBl0Epi-k3UmDYQ4DD4Z6lJQVKUfsDwRVo1OgT9c9HsOAPRaPUoDa3BIT1uBfWdwSha9Y9nXHT-hEHDkyw2bQG6xAYYshbYY2yrXh3tQCymI8D5XPZJO3Z8Wab0DYO1lJWA2sEbcLU6_c3N82ky_og4KFWyIT2XCpQAD6b9gcfRXPgCWqRpk47PwOlMDNi5vrsassNYMt9zlgmKWNkLbBfs2xOtVmeh865bq3nmc-r3RndIBTsTGx1y5ogStoC3t5NhYxDtP974ef8GOT4PED40aOePAfHvvx1uTbjxhSw40aMBjwUpu8054Qb_mxrwk7cR3FbjEQsXKwM6oQ7J1fKhusGto6C6DPk1jY7EYK2-iRIJmLBz7QvJ_962OQmLdUpVd55KT3lbS5sLZ1UYtuVqWKoT4n3C1igDtf0PFSB3D2aW76dA3Hu5gzJVwN3niCZrz9cLa5W_HRo9c9MRTK8UPkqSGEe95WeGv0KAap8GU4Lk5fXFaNkhpPZFmt_7qB4Ee27wJJpZunXsGQ';
+// Dropbox OAuth Configuration
+// You can get this key from the Dropbox App Console (https://www.dropbox.com/developers/apps)
+export const DROPBOX_APP_KEY = 'r96fz9zusmf39ej'; 
+
+// OPTIONAL: If your app requires a client secret (Standard Code Flow), add it here.
+export const DROPBOX_APP_SECRET = 'wnwgggpecy0novt'; 
+
+/**
+ * MANUAL REDIRECT URI OVERRIDE
+ * If you are getting "Invalid Redirect URI", set this string to EXACTLY 
+ * what you have in your Dropbox App Console. 
+ * Example: 'https://your-app-id.stackblitz.io'
+ */
+const MANUAL_REDIRECT_URI: string | null = null;
+
+const getRedirectUri = () => {
+    if (MANUAL_REDIRECT_URI) return MANUAL_REDIRECT_URI;
+
+    const url = new URL(window.location.href);
+    // Use the origin + pathname (stripping query params and hashes)
+    // Most Dropbox apps expect the root URL or a specific file.
+    let base = url.origin + url.pathname;
+    
+    // Ensure it doesn't end with a trailing slash if that's how it's registered
+    // Or add index.html if your host requires it. 
+    // Standard practice for SPAs is just the clean base URL.
+    if (base.endsWith('/')) {
+        base = base.slice(0, -1);
+    }
+    
+    return base;
+};
+
+export const REDIRECT_URI = getRedirectUri();
+
+// Legacy token (kept for reference)
+export const DROPBOX_ACCESS_TOKEN = '';

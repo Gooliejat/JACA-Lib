@@ -36,11 +36,8 @@ export const AppLogin: React.FC<AppLoginProps> = ({ onLogin, onResetToken }) => 
             </div>
         </div>
         <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-          Sign in to Database
+          Sign in
         </h2>
-        <p className="mt-2 text-center text-sm text-gray-600">
-            Authenticated via Dropbox 
-        </p>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
@@ -67,25 +64,6 @@ export const AppLogin: React.FC<AppLoginProps> = ({ onLogin, onResetToken }) => 
               Sign In
             </Button>
           </form>
-          
-          <div className="mt-6">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">
-                  Connected to incorrect Dropbox?
-                </span>
-              </div>
-            </div>
-
-            <div className="mt-6">
-                <Button variant="ghost" className="w-full text-sm" onClick={onResetToken}>
-                    Disconnect Dropbox
-                </Button>
-            </div>
-          </div>
         </div>
       </div>
     </div>

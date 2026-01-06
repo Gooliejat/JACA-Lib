@@ -21,6 +21,8 @@ export interface User {
 
 export interface AuthState {
   dropboxToken: string | null;
+  refreshToken: string | null;
+  tokenExpiresAt: number | null;
   isAuthenticated: boolean;
   currentUser: User | null;
   status: 'idle' | 'checking_dropbox' | 'login_required' | 'app_login' | 'dashboard';
@@ -56,4 +58,23 @@ export interface MusicDatabase {
   fileName: string; // The path to the json file containing the records
   createdAt: string;
   recordCount: number;
+}
+
+export interface GoogleCredential {
+  id: string;
+  accountName: string;
+  email: string;
+  password?: string;
+  note?: string;
+  createdAt: string;
+}
+
+export interface DropboxTokenResponse {
+  access_token: string;
+  token_type: string;
+  expires_in: number;
+  refresh_token?: string;
+  scope?: string;
+  uid?: string;
+  account_id?: string;
 }
