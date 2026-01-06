@@ -39,7 +39,7 @@ import {
     Key,
     Link as LinkIcon,
     UserCircle,
-    MoreVertical
+    MoreHorizontal
 } from 'lucide-react';
 import { hashPassword } from '../utils/crypto';
 
@@ -562,6 +562,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, service, onLogout })
       } catch (e) { alert("Failed to delete association"); } finally { setDeletingId(null); }
   };
 
+  const getUserAssociationNames = (u: User) => {
+      if (!u.associationIds || u.associationIds.length === 0) return 'None';
+      return u.associationIds
+        .map(id => associations.find(a => a.id === id)?.name)
+        .filter(Boolean)
+        .join(', ');
+  };
+
   const renderEditUserModal = () => {
      if (!userToEdit) return null;
      const availableAssocs = getAvailableAssociations();
@@ -990,6 +998,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, service, onLogout })
                                             <tr>
                                                 <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest">User</th>
                                                 <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest">Role</th>
+                                                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest">Access Groups</th>
                                                 <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-widest">Actions</th>
                                             </tr>
                                         </thead>
@@ -998,6 +1007,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, service, onLogout })
                                                 <tr key={u.username} className="hover:bg-gray-50/50 transition-colors">
                                                     <td className="px-6 py-4"><div className="font-bold text-gray-900">{u.username}</div></td>
                                                     <td className="px-6 py-4"><span className="text-xs font-bold bg-slate-100 px-2 py-0.5 rounded capitalize text-slate-600">{u.role}</span></td>
+                                                    <td className="px-6 py-4"><div className="text-sm text-gray-500 max-w-[200px] truncate">{getUserAssociationNames(u)}</div></td>
                                                     <td className="px-6 py-4 text-right">
                                                         <Button variant="ghost" className="text-brand-600 font-bold mr-2" onClick={() => handleEditUserClick(u)}>Edit</Button>
                                                         {u.username !== user.username && <Button variant="ghost" className="text-red-500 font-bold" onClick={() => handleDeleteUser(u.username)}>Delete</Button>}
@@ -1013,7 +1023,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, service, onLogout })
                                             <div className="flex items-center justify-between">
                                                 <div className="flex items-center gap-3">
                                                     <div className="w-10 h-10 bg-brand-50 rounded-full flex items-center justify-center text-brand-600 font-bold text-sm">{u.username.substring(0,2).toUpperCase()}</div>
-                                                    <div><h4 className="font-extrabold text-gray-900">{u.username}</h4><p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">{u.role}</p></div>
+                                                    <div>
+                                                        <h4 className="font-extrabold text-gray-900">{u.username}</h4>
+                                                        <div className="flex items-center gap-2">
+                                                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">{u.role}</p>
+                                                            <span className="text-[10px] text-brand-600 font-bold bg-brand-50 px-1.5 rounded">{getUserAssociationNames(u)}</span>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
                                             <div className="flex gap-2">
@@ -1152,7 +1168,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, service, onLogout })
                 <>
                     <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4 text-left">
                         <div><h2 className="text-2xl font-extrabold text-gray-900 tracking-tight">Dropbox Documents</h2><p className="text-sm text-gray-500">Manual JSON file management.</p></div>
-                        <div className="flex gap-2"><Button variant="secondary" onClick={loadFiles} className="text-gray-700 flex-1 md:flex-none font-bold"><RefreshCw size={16} /></Button><Button onClick={handleCreateFile} className="flex-[3] md:flex-none font-bold">+ New JSON</Button></div>
+                        <div className="flex gap-2"><Button variant="secondary" onClick={loadFiles} className="text-gray-700 flex-1 md:flex-none font-bold font-bold"><RefreshCw size={16} /></Button><Button onClick={handleCreateFile} className="flex-[3] md:flex-none font-bold font-bold">+ New JSON</Button></div>
                     </div>
                     <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden text-left">
                         <table className="min-w-full divide-y divide-gray-100">
