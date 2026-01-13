@@ -1,9 +1,11 @@
+
 // Dropbox OAuth Configuration
 // You can get this key from the Dropbox App Console (https://www.dropbox.com/developers/apps)
-export const DROPBOX_APP_KEY = 'r96fz9zusmf39ej'; 
+// Added explicit string typing to prevent literal type inference errors during placeholder checks
+export const DROPBOX_APP_KEY: string = '7wy2wq3qq6purtc'; 
 
 // OPTIONAL: If your app requires a client secret (Standard Code Flow), add it here.
-export const DROPBOX_APP_SECRET = 'wnwgggpecy0novt'; 
+export const DROPBOX_APP_SECRET: string = '4y2yvpvzfisc2q7'; 
 
 /**
  * MANUAL REDIRECT URI OVERRIDE

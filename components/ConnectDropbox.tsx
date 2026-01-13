@@ -40,11 +40,11 @@ export const ConnectDropbox: React.FC<ConnectDropboxProps> = ({ error, onManualT
     <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8 px-4">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flex justify-center mb-6">
-             <div className="h-16 w-16 bg-brand-600 rounded-2xl flex items-center justify-center shadow-xl rotate-3">
-                <svg viewBox="0 0 24 24" fill="none" className="w-10 h-10 text-white" stroke="currentColor" strokeWidth="2.5">
-                   <path d="M7 17l9.2-9.2M17 17V7H7" />
-                </svg>
-             </div>
+          <div className="h-16 w-16 bg-brand-600 rounded-2xl flex items-center justify-center shadow-xl rotate-3">
+            <svg viewBox="0 0 24 24" fill="none" className="w-10 h-10 text-white" stroke="currentColor" strokeWidth="2.5">
+              <path d="M7 17l9.2-9.2M17 17V7H7" />
+            </svg>
+          </div>
         </div>
         <h2 className="text-center text-3xl font-extrabold text-slate-900 tracking-tight">
           Connect to DropBase
@@ -59,13 +59,12 @@ export const ConnectDropbox: React.FC<ConnectDropboxProps> = ({ error, onManualT
           <div className="rounded-xl bg-red-50 p-4 border border-red-100 flex gap-3 shadow-sm">
             <AlertCircle className="h-5 w-5 text-red-500 shrink-0" />
             <div className="text-sm text-red-800">
-              <h3 className="font-bold">Connection Error</h3>
+              <h3 className="font-bold">Connection Issue</h3>
               <p className="mt-0.5 opacity-90">{error}</p>
             </div>
           </div>
         )}
 
-        {/* Method 1: OAuth (Standard) */}
         <div className="bg-white p-6 shadow-sm border border-slate-200 rounded-2xl overflow-hidden relative">
             <div className="flex items-start gap-4 mb-6">
                 <div className="p-2.5 bg-brand-50 text-brand-600 rounded-xl">
@@ -74,7 +73,7 @@ export const ConnectDropbox: React.FC<ConnectDropboxProps> = ({ error, onManualT
                 <div>
                     <h3 className="text-lg font-bold text-slate-900">Standard Access</h3>
                     <p className="text-sm text-slate-500 leading-relaxed">
-                        Recommended for most users. Uses secure OAuth 2.0 and persists your session using a refresh token.
+                        Recommended. Uses secure OAuth 2.0 to access the JACA Lib folder.
                     </p>
                 </div>
             </div>
@@ -87,7 +86,7 @@ export const ConnectDropbox: React.FC<ConnectDropboxProps> = ({ error, onManualT
                 <div className="flex items-start gap-3">
                     <HelpCircle className="h-5 w-5 text-slate-400 shrink-0 mt-0.5" />
                     <div className="flex-1 min-w-0">
-                        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Redirect URI Configuration</p>
+                        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Redirect URI Help</p>
                         <div className="flex items-center gap-2 bg-slate-50 p-2 rounded-lg border border-slate-200">
                             <code className="text-[10px] text-slate-600 truncate flex-1 font-mono">{REDIRECT_URI}</code>
                             <button onClick={copyToClipboard} className="text-brand-500 hover:text-brand-700 p-1 transition-colors">
@@ -99,7 +98,6 @@ export const ConnectDropbox: React.FC<ConnectDropboxProps> = ({ error, onManualT
             </div>
         </div>
 
-        {/* Method 2: Manual Token (Development) */}
         <div className="bg-white shadow-sm border border-slate-200 rounded-2xl overflow-hidden">
             <button 
                 onClick={() => setShowManual(!showManual)}
@@ -117,12 +115,12 @@ export const ConnectDropbox: React.FC<ConnectDropboxProps> = ({ error, onManualT
             {showManual && (
                 <div className="px-6 pb-6 pt-2 animate-in fade-in slide-in-from-top-2">
                     <p className="text-xs text-slate-500 mb-4 leading-relaxed">
-                        Use a temporary access token generated from your <a href="https://www.dropbox.com/developers/apps" target="_blank" rel="noopener noreferrer" className="text-brand-600 font-bold hover:underline">Dropbox Console</a>. Ideal for testing.
+                        For development only. Generate from your <a href="https://www.dropbox.com/developers/apps" target="_blank" rel="noopener noreferrer" className="text-brand-600 font-bold hover:underline">Dropbox Console</a>.
                     </p>
                     <form onSubmit={handleManualSubmit} className="space-y-3">
                         <Input 
                             type="password"
-                            placeholder="Paste your access token here..."
+                            placeholder="Paste access token..."
                             className="text-xs font-mono"
                             value={manualToken}
                             onChange={(e) => setManualToken(e.target.value)}

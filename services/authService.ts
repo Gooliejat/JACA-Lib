@@ -16,14 +16,17 @@ export class AuthService {
     // Save verifier for the callback step
     sessionStorage.setItem(VERIFIER_STORAGE_KEY, verifier);
 
-    const params = new URLSearchParams({
+    const paramsRecord: Record<string, string> = {
       client_id: DROPBOX_APP_KEY,
       response_type: 'code',
       redirect_uri: REDIRECT_URI,
       code_challenge: challenge,
       code_challenge_method: 'S256',
       token_access_type: 'offline', // Request refresh token
-    });
+      force_reapprove: 'true', // Forces the login screen so users can switch accounts
+    };
+
+    const params = new URLSearchParams(paramsRecord);
 
     // Determine if we are in an iframe (like StackBlitz preview)
     const isInIframe = window.self !== window.top;

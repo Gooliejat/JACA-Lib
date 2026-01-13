@@ -63,6 +63,16 @@ export const AppLogin: React.FC<AppLoginProps> = ({ onLogin, onResetToken }) => 
             <Button type="submit" className="w-full" isLoading={loading}>
               Sign In
             </Button>
+            
+            <div className="mt-4 border-t pt-4 text-center">
+                <button 
+                  type="button"
+                  onClick={onResetToken} 
+                  className="text-xs text-gray-400 hover:text-brand-600 transition-colors"
+                >
+                  Switch Dropbox Account
+                </button>
+            </div>
           </form>
         </div>
       </div>
